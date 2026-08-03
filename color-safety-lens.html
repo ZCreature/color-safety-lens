@@ -342,8 +342,17 @@
     }
 
     .toolbar-title strong {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 7px;
       font-size: 13px;
+    }
+
+    .toolbar-title svg {
+      width: 15px;
+      height: 15px;
+      flex: none;
+      display: block;
     }
 
     .matrix {
@@ -871,7 +880,7 @@
         <section class="matrix-shell heatmap-shell">
           <div class="toolbar">
             <div class="toolbar-title">
-              <strong>Heatmap Divergence</strong>
+              <strong><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8" opacity=".55"/><rect x="3" y="13" width="8" height="8" opacity=".55"/><rect x="13" y="13" width="8" height="8" opacity=".25"/></svg>Heatmap Divergence</strong>
             </div>
             <div class="toolbar-actions heatmap-actions">
               <div class="heatmap-controls">
@@ -910,7 +919,7 @@
         <section class="matrix-shell">
           <div class="toolbar">
             <div class="toolbar-title">
-              <strong>Vision Control</strong>
+              <strong><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>Vision Control</strong>
             </div>
             <div class="toolbar-actions">
               <div class="lens-controls" aria-label="Tint matrix color safety lens">
@@ -1680,7 +1689,9 @@
       const heatFrac = (parseFloat(getComputedStyle(heatmapStage).getPropertyValue("--split-pos")) || 50) / 100;
       const matrixFrac = (parseFloat(getComputedStyle(lensStage).getPropertyValue("--split-pos")) || 50) / 100;
 
-      text("Heatmap Divergence", mainX + mainPad, 86, 13, 900);
+      const heatIconX = mainX + mainPad;
+      parts.push(`<g fill="#000000"><rect x="${heatIconX}" y="73" width="7" height="7"/><rect x="${heatIconX + 8}" y="73" width="7" height="7" opacity=".55"/><rect x="${heatIconX}" y="81" width="7" height="7" opacity=".55"/><rect x="${heatIconX + 8}" y="81" width="7" height="7" opacity=".25"/></g>`);
+      text("Heatmap Divergence", mainX + mainPad + 22, 86, 13, 900);
       const heatControlsX = mainX + mainPad + 170;
       const heatA = colors.find((color) => color.hex === heatmapColorA.value) || colors[0];
       const heatB = colors.find((color) => color.hex === heatmapColorB.value) || colors[1];
@@ -1727,7 +1738,8 @@
         tile(tableX + labelW + index * cellW, heatmapY + headerH, cellW, cellH, simHex, normalHex, ratio, ratio >= 4.5, heatmapMode.value === "normal" ? "" : normalHex, heatmapCompareMode === "split", heatFrac);
       });
 
-      text("Vision Control", tableX, matrixY - 34, 13, 900);
+      parts.push(`<ellipse cx="${tableX + 7.5}" cy="${matrixY - 38.5}" rx="7.2" ry="4.8" fill="none" stroke="#000000" stroke-width="1.4"/><circle cx="${tableX + 7.5}" cy="${matrixY - 38.5}" r="2" fill="#000000"/>`);
+      text("Vision Control", tableX + 22, matrixY - 34, 13, 900);
       control(matrixMode.options[matrixMode.selectedIndex].text, tableX + 170, matrixY - 58, 140);
       rect(tableX + 320, matrixY - 58, 110, 38, "#ffffff", "#000000", 1);
       text("Full View", tableX + 375, matrixY - 34, 12, 400, "middle");
@@ -1872,7 +1884,9 @@
     });
 
     updateSeverityVisibility();
-    createPaletteRows(recommendedSets[recommendedIndex]);
+    // Open light: five colors at most, so the first paint isn't a wall of
+    // tables. The button and the inputs bring in as many as the user wants.
+    createPaletteRows(recommendedSets[recommendedIndex].slice(0, 5));
     update();
 
     document.querySelector(".mark").addEventListener("click", (event) => {
