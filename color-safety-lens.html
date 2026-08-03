@@ -14,8 +14,32 @@
       --paper: #fbf8f1;
       --focus: #000000;
       --grid: #d9d9d9;
+      --control: #ffffff;
+      --soft: #666666;
+      --ground: radial-gradient(ellipse at 70% 100%, #e8e0cd 0%, #f0ead6 18%, #f6f1e7 46%);
       --shadow: none;
       --sidebar-control-width: 202px;
+    }
+
+    /* Dark theme: the chrome inverts, the tiles do not — swatches, badges and
+       their black-text readouts ARE the data (contrast against black text),
+       so they render identically in both themes. */
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --ink: #ededed;
+      --muted: #b9b9b9;
+      --line: #d6d6d6;
+      --panel: #1d1d1d;
+      --paper: #161616;
+      --focus: #ffffff;
+      --grid: #3f3f3f;
+      --control: #1f1f1f;
+      --soft: #9a9a9a;
+      --ground: radial-gradient(ellipse at 70% 100%, #0c0c0c 0%, #101010 18%, #151515 46%);
+    }
+
+    :root[data-theme="dark"] .delta-swatch {
+      border-color: rgba(255, 255, 255, .4);
     }
 
     * {
@@ -24,7 +48,7 @@
 
     body {
       margin: 0;
-      background: radial-gradient(ellipse at 70% 100%, #e8e0cd 0%, #f0ead6 18%, #f6f1e7 46%);
+      background: var(--ground);
       color: var(--ink);
       font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
       font-size: 12px;
@@ -49,7 +73,7 @@
     input:focus-visible,
     textarea:focus-visible,
     select:focus-visible {
-      outline: 3px solid #000000;
+      outline: 3px solid var(--focus);
       outline-offset: 2px;
       border-color: var(--focus);
     }
@@ -193,7 +217,7 @@
     .palette-swatch {
       width: 38px;
       height: 38px;
-      border: 1px solid #000000;
+      border: 1px solid var(--line);
       border-radius: 0;
       background: var(--panel);
       padding: 0;
@@ -244,16 +268,40 @@
       border: none;
       width: 80px;
       cursor: pointer;
-      accent-color: #000000;
+      accent-color: var(--ink);
     }
 
     .secondary {
       min-height: 38px;
       border-radius: 0;
-      background: #ffffff;
+      background: var(--control);
       font-weight: 700;
       text-align: center;
     }
+
+    .theme-toggle {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 50;
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      background: var(--control);
+      color: var(--ink);
+    }
+
+    .theme-toggle svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+
+    .theme-toggle .ico-sun { display: none; }
+    :root[data-theme="dark"] .theme-toggle .ico-moon { display: none; }
+    :root[data-theme="dark"] .theme-toggle .ico-sun { display: block; }
 
     .chart-nav {
       display: grid;
@@ -636,7 +684,7 @@
       bottom: 0;
       left: var(--split-pos);
       width: 0;
-      border-left: 3px solid #000000;
+      border-left: 3px solid var(--ink);
       cursor: ew-resize;
       display: none;
       z-index: 5;
@@ -651,8 +699,8 @@
       width: 18px;
       height: 38px;
       transform: translateY(-50%);
-      background: #ffffff;
-      border: 1px solid #000000;
+      background: var(--control);
+      border: 1px solid var(--line);
     }
 
     .split-handle::after {
@@ -663,7 +711,7 @@
       width: 2px;
       height: 24px;
       transform: translateY(-50%);
-      background: #000000;
+      background: var(--ink);
     }
 
     .split .split-handle {
@@ -717,12 +765,12 @@
     }
 
     .delta-muted {
-      color: #666;
+      color: var(--soft);
     }
 
     .delta-empty {
       font-size: 11px;
-      color: #666;
+      color: var(--soft);
     }
 
     @media (max-width: 1060px) {
@@ -833,8 +881,19 @@
     }
 
   </style>
+  <script>
+    // Applied before first paint so a dark visitor never flashes the paper
+    // theme. The toggle at the top right persists the choice.
+    document.documentElement.dataset.theme =
+      localStorage.getItem("csl-theme") ||
+      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  </script>
 </head>
 <body>
+  <button class="theme-toggle" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+    <svg class="ico-moon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 019.5 3.5a8.5 8.5 0 108.5 11z"/></svg>
+    <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.5 4.5l2.1 2.1M17.4 17.4l2.1 2.1M19.5 4.5l-2.1 2.1M6.6 17.4l-2.1 2.1"/></svg>
+  </button>
   <div class="app">
     <aside>
       <div class="brand">
@@ -869,7 +928,7 @@
         <strong>Deutan</strong> - green-deficient (approx. 6% of males)<br>
         <strong>Tritan</strong> - blue-yellow deficient (under 1% of population)<br>
         <strong>Achromatopsia</strong> - full monochromacy (very rare)<br>
-        <hr style="border:none; border-top: 1px solid rgba(0,0,0,0.25); margin: 6px 0;">
+        <hr style="border:none; border-top: 1px solid currentColor; opacity:.25; margin: 6px 0;">
         Severity 0% = unaffected. 100% = full dichromacy. Most colorblind viewers fall between 40-80%.
       </div>
 
@@ -989,6 +1048,8 @@
 
     // Approved colorblind-safe palettes. The first set loads on start; each
     // press of Recommended Colors advances to the next and wraps around.
+    // Only the first RECOMMENDED_SHOWN colors of a set are loaded — the
+    // screen stays light and the user adds more when they need more.
     const recommendedSets = [
       // Wong / Okabe-Ito
       ["E69F00", "56B4E9", "009E73", "F0E442", "0072B2", "D55E00", "CC79A7"],
@@ -998,6 +1059,7 @@
       ["648FFF", "785EF0", "DC267F", "FE6100", "FFB000"]
     ];
     let recommendedIndex = 0;
+    const RECOMMENDED_SHOWN = 5;
 
     // Delta E threshold: pairs below this are flagged as potentially confusable.
     const CONFUSABLE_THRESHOLD = 10;
@@ -1800,8 +1862,14 @@
 
     document.querySelector("#recommendedBtn").addEventListener("click", () => {
       recommendedIndex = (recommendedIndex + 1) % recommendedSets.length;
-      createPaletteRows(recommendedSets[recommendedIndex]);
+      createPaletteRows(recommendedSets[recommendedIndex].slice(0, RECOMMENDED_SHOWN));
       update();
+    });
+
+    document.querySelector("#themeToggle").addEventListener("click", () => {
+      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem("csl-theme", next);
     });
 
     matrixMode.addEventListener("change", () => {
@@ -1855,9 +1923,7 @@
     });
 
     updateSeverityVisibility();
-    // Open light: five colors at most, so the first paint isn't a wall of
-    // tables. The button and the inputs bring in as many as the user wants.
-    createPaletteRows(recommendedSets[recommendedIndex].slice(0, 5));
+    createPaletteRows(recommendedSets[recommendedIndex].slice(0, RECOMMENDED_SHOWN));
     update();
 
     document.querySelector(".mark").addEventListener("click", (event) => {
