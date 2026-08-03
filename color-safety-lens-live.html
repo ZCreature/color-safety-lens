@@ -403,16 +403,32 @@
   const ratioVal   = document.querySelector("#ratioVal");
   const badge      = document.querySelector("#badge");
 
-  const MATRICES = {
-    protanopia:    [[0.567,0.433,0],[0.558,0.442,0],[0,0.242,0.758]],
-    deuteranopia:  [[0.625,0.375,0],[0.7,0.3,0],[0,0.3,0.7]],
-    tritanopia:    [[0.95,0.05,0],[0,0.433,0.567],[0,0.475,0.525]],
-    achromatopsia: [[0.299,0.587,0.114],[0.299,0.587,0.114],[0.299,0.587,0.114]]
+  // Machado et al. 2009 dichromacy matrices (severity 1.0), applied in linear
+  // RGB — same model as the main tool. Achromatopsia is linear Rec. 709 luma.
+  const MACHADO = {
+    protanopia:   [[0.152286,1.052583,-0.204868],[0.114503,0.786281,0.099216],[-0.003882,-0.048116,1.051998]],
+    deuteranopia: [[0.367322,0.860646,-0.227968],[0.280085,0.672501,0.047413],[-0.011820,0.042940,0.968881]],
+    tritanopia:   [[1.255528,-0.076749,-0.178779],[-0.078411,0.930809,0.147602],[0.004733,0.691367,0.303900]]
   };
+
+  // sRGB <-> linear lookup tables — per-pixel Math.pow is too slow at retina
+  // resolution, and the WCAG alarm needs true relative luminance every frame.
+  const SRGB2LIN = new Float32Array(256);
+  for (let v = 0; v < 256; v++) {
+    const s = v / 255;
+    SRGB2LIN[v] = s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  }
+  const LIN2SRGB = new Uint8ClampedArray(4096);
+  for (let i = 0; i < 4096; i++) {
+    const c = i / 4095;
+    LIN2SRGB[i] = Math.round((c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055) * 255);
+  }
+  const lin2srgb = c => LIN2SRGB[c <= 0 ? 0 : c >= 1 ? 4095 : (c * 4095 + 0.5) | 0];
 
   let frozen = false, split = false, alarm = false, splitPct = 50;
   let sample = { x: .5, y: .5 };
   let frozenFrame = null;
+  let lastRaw = null, lastRawW = 0, lastRawH = 0;
   let live = false;
 
   // Text exclusion via local contrast variance.
@@ -422,21 +438,21 @@
   // Uses fast gamma-space BT.601 luma (no Math.pow) for performance.
   const TEXT_EDGE_THRESHOLD = 45; // luma difference that indicates text/edge
   const TEXT_RADIUS = 8;          // pixel radius to sample
+  // 2D offsets, bounds-checked per axis so samples near the left/right edges
+  // don't wrap onto adjacent rows.
+  const TEXT_OFFSETS = (R => [
+    [-R, 0], [R, 0], [0, -R], [0, R],
+    [-R, -R], [R, -R], [-R, R], [R, R],
+    [-2*R, 0], [2*R, 0], [0, -2*R], [0, 2*R] // second ring for thick glyphs
+  ])(TEXT_RADIUS);
 
-  function isTextOrEdge(src, i, cw) {
-    const len = src.length;
-    const step = TEXT_RADIUS * 4;
-    const row  = TEXT_RADIUS * cw * 4;
+  function isTextOrEdge(src, x, y, cw, ch) {
+    const i = (y * cw + x) * 4;
     const selfLuma = src[i] * 0.299 + src[i+1] * 0.587 + src[i+2] * 0.114;
-    const offsets = [
-      -step, step, -row, row,
-      -row - step, -row + step,
-       row - step,  row + step,
-      -step * 2, step * 2, -row * 2, row * 2 // second ring for thick glyphs
-    ];
-    for (const off of offsets) {
-      const n = i + off;
-      if (n < 0 || n + 2 >= len) continue;
+    for (const [dx, dy] of TEXT_OFFSETS) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || nx >= cw || ny < 0 || ny >= ch) continue;
+      const n = (ny * cw + nx) * 4;
       const nLuma = src[n] * 0.299 + src[n+1] * 0.587 + src[n+2] * 0.114;
       if (Math.abs(nLuma - selfLuma) > TEXT_EDGE_THRESHOLD) return true;
     }
@@ -450,22 +466,22 @@
   }
 
   function simulate(r, g, b, type) {
-    const m = MATRICES[type];
+    const rl = SRGB2LIN[r], gl = SRGB2LIN[g], bl = SRGB2LIN[b];
+    if (type === "achromatopsia") {
+      const y = lin2srgb(0.2126 * rl + 0.7152 * gl + 0.0722 * bl);
+      return { r: y, g: y, b: y };
+    }
+    const m = MACHADO[type];
     if (!m) return { r, g, b };
     return {
-      r: clamp(r*m[0][0] + g*m[0][1] + b*m[0][2]),
-      g: clamp(r*m[1][0] + g*m[1][1] + b*m[1][2]),
-      b: clamp(r*m[2][0] + g*m[2][1] + b*m[2][2])
+      r: lin2srgb(rl * m[0][0] + gl * m[0][1] + bl * m[0][2]),
+      g: lin2srgb(rl * m[1][0] + gl * m[1][1] + bl * m[1][2]),
+      b: lin2srgb(rl * m[2][0] + gl * m[2][1] + bl * m[2][2])
     };
   }
 
-  function linearize(v) {
-    const s = v / 255;
-    return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  }
-
   function luminance(r, g, b) {
-    return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
+    return 0.2126 * SRGB2LIN[r] + 0.7152 * SRGB2LIN[g] + 0.0722 * SRGB2LIN[b];
   }
 
   function contrast(L1, L2) {
@@ -508,13 +524,17 @@
     if (!drawFrame()) { requestAnimationFrame(tick); return; }
 
     const mode = visionMode.value;
-    const img  = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const cw   = canvas.width, chh = canvas.height;
+    const img  = ctx.getImageData(0, 0, cw, chh);
     const orig = new Uint8ClampedArray(img.data);
     const d    = img.data;
-    const sx   = Math.floor(canvas.width * splitPct / 100);
+    const sx   = Math.floor(cw * splitPct / 100);
+
+    if (!frozen) { lastRaw = orig; lastRawW = cw; lastRawH = chh; }
 
     for (let i = 0; i < d.length; i += 4) {
-      const px = (i / 4) % canvas.width;
+      const p  = i >> 2;
+      const px = p % cw;
       const inSimZone = !split || px < sx;
 
       let r = orig[i], g = orig[i+1], b = orig[i+2];
@@ -524,7 +544,7 @@
         r = s.r; g = s.g; b = s.b;
       }
 
-      if (alarm && isAlarmPixel(r, g, b) && !isTextOrEdge(orig, i, canvas.width)) {
+      if (alarm && isAlarmPixel(r, g, b) && !isTextOrEdge(orig, px, (p / cw) | 0, cw, chh)) {
         d[i] = 255; d[i+1] = 0; d[i+2] = 255;
       } else {
         d[i] = r; d[i+1] = g; d[i+2] = b;
@@ -559,6 +579,7 @@
     live = false;
     frozen = false;
     frozenFrame = null;
+    lastRaw = null;
     freezeBtn.setAttribute("aria-pressed", "false");
     freezeBtn.textContent = "Freeze";
     idlePrompt.style.display = "";
@@ -603,7 +624,12 @@
     frozen = !frozen;
     freezeBtn.setAttribute("aria-pressed", String(frozen));
     freezeBtn.textContent = frozen ? "Unfreeze" : "Freeze";
-    frozenFrame = frozen ? ctx.getImageData(0, 0, canvas.width, canvas.height) : null;
+    // Freeze the raw pre-simulation frame; tick re-applies the current filter
+    // to it each frame, so the simulation is never applied twice and switching
+    // vision modes while frozen works.
+    frozenFrame = frozen && lastRaw
+      ? new ImageData(new Uint8ClampedArray(lastRaw), lastRawW, lastRawH)
+      : null;
     statusEl.textContent = frozen ? "Frozen" : "Live";
   });
 

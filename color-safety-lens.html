@@ -949,7 +949,7 @@
     const CONFUSABLE_THRESHOLD = 10;
 
     // Machado et al. 2009 precomputed simulation matrices.
-    // severity 0.0 = normal, 1.0 = dichromacy. Apply directly to sRGB (no linearization).
+    // severity 0.0 = normal, 1.0 = dichromacy. Applied in linear RGB, then re-encoded to sRGB.
     // Source: Machado, Oliveira, Fernandes (2009), IEEE TVCG 15(6), pp. 1291-1298.
     const MACHADO = {
       protan: {
@@ -1579,10 +1579,11 @@
           text("X", x + 9, y + 13, 8, 900, "middle");
         }
       };
-      const tile = (x, y, w, h, displayHex, normalHex, ratio, aa, chipHex, split = false) => {
+      const tile = (x, y, w, h, displayHex, normalHex, ratio, aa, chipHex, split = false, frac = 0.5) => {
         if (split) {
-          rect(x, y, w / 2, h, displayHex, "#d9d9d9", .5);
-          rect(x + (w / 2), y, w / 2, h, normalHex, "#d9d9d9", .5);
+          const simW = w * frac;
+          rect(x, y, simW, h, displayHex, "#d9d9d9", .5);
+          rect(x + simW, y, w - simW, h, normalHex, "#d9d9d9", .5);
           parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#d9d9d9" stroke-width="0.5"/>`);
         } else {
           rect(x, y, w, h, displayHex, "#d9d9d9", .5);
@@ -1632,42 +1633,56 @@
       rect(180, generateY + 58, 42, 38, "#ffffff", "#000000", 1);
       text("SVG", 201, generateY + 82, 10, 900, "middle");
 
+      const scheme = heatmapScheme.value;
+      const heatFrac = (parseFloat(getComputedStyle(heatmapStage).getPropertyValue("--split-pos")) || 50) / 100;
+      const matrixFrac = (parseFloat(getComputedStyle(lensStage).getPropertyValue("--split-pos")) || 50) / 100;
+
       text("Heatmap Divergence", mainX + mainPad, 86, 13, 900);
       const heatControlsX = mainX + mainPad + 170;
       const heatA = colors.find((color) => color.hex === heatmapColorA.value) || colors[0];
       const heatB = colors.find((color) => color.hex === heatmapColorB.value) || colors[1];
       control(heatA ? rawHex(heatA.hex) : "", heatControlsX, 62, 140);
-      control(heatB ? rawHex(heatB.hex) : "", heatControlsX + 150, 62, 140);
-      control(heatmapMode.options[heatmapMode.selectedIndex].text, heatControlsX + 300, 62, 140);
-      rect(heatControlsX + 450, 62, 110, 38, "#ffffff", "#000000", 1);
-      text("Full View", heatControlsX + 505, 86, 12, 400, "middle");
-      rect(heatControlsX + 560, 62, 110, 38, "#ffffff", "#000000", 1);
-      text("Split Lens", heatControlsX + 615, 86, 12, 400, "middle");
+      let heatControlX = heatControlsX + 150;
+      if (scheme !== "sequential") {
+        control(heatB ? rawHex(heatB.hex) : "", heatControlX, 62, 140);
+        heatControlX += 150;
+      }
+      control(heatmapMode.options[heatmapMode.selectedIndex].text, heatControlX, 62, 140);
+      rect(heatControlX + 150, 62, 110, 38, "#ffffff", "#000000", 1);
+      text("Full View", heatControlX + 205, 86, 12, 400, "middle");
+      rect(heatControlX + 260, 62, 110, 38, "#ffffff", "#000000", 1);
+      text("Split Lens", heatControlX + 315, 86, 12, 400, "middle");
 
       const tableX = mainX + mainPad;
-      const headers = ["100%", "80%", "60%", "30%", "10%", "10%", "30%", "60%", "80%", "100%"];
+      const heatHeaders = scheme === "sequential"
+        ? ["100%", "90%", "80%", "70%", "60%", "50%", "40%", "30%", "20%", "10%"]
+        : ["100%", "80%", "60%", "30%", "10%", "10%", "30%", "60%", "80%", "100%"];
       rect(tableX, heatmapY, labelW, headerH, "#ffffff", "#d9d9d9", .5);
       Array.from({ length: 10 }, (_, index) => {
         const x = tableX + labelW + index * cellW;
         rect(x, heatmapY, cellW, headerH, "#ffffff", "#d9d9d9", .5);
-        if (headers[index]) text(headers[index], x + 10, heatmapY + 20, 8, 900);
+        if (heatHeaders[index]) text(heatHeaders[index], x + 10, heatmapY + 20, 8, 900);
       });
       rect(tableX, heatmapY + headerH, labelW, cellH, "#ffffff", "#d9d9d9", .5);
-      if (heatA && heatB) {
+      const heatItems = scheme === "sequential"
+        ? (heatA ? [100, 90, 80, 70, 60, 50, 40, 30, 20, 10].map((pct) => [heatA, pct]) : [])
+        : (heatA && heatB ? [
+            ...[100, 80, 60, 30, 10].map((pct) => [heatA, pct]),
+            ...[10, 30, 60, 80, 100].map((pct) => [heatB, pct])
+          ] : []);
+      if (scheme === "sequential") {
+        if (heatA) text(rawHex(heatA.hex), tableX + labelW / 2, heatmapY + headerH + 48, 9, 900, "middle");
+      } else if (heatA && heatB) {
         text(rawHex(heatA.hex), tableX + labelW / 2, heatmapY + headerH + 42, 9, 900, "middle");
         text(rawHex(heatB.hex), tableX + labelW / 2, heatmapY + headerH + 57, 9, 900, "middle");
-        const heatItems = [
-          ...[100, 80, 60, 30, 10].map((pct) => [heatA, pct]),
-          ...[10, 30, 60, 80, 100].map((pct) => [heatB, pct])
-        ];
-        heatItems.forEach(([color, pct], index) => {
-          const rgb = mixWithWhite(color.rgb, pct);
-          const normalHex = rgbToHex(rgb);
-          const simHex = rgbToHex(simulate(rgb, heatmapMode.value, heatmapSeverity));
-          const ratio = contrastRatio(rgb, { r: 0, g: 0, b: 0 });
-          tile(tableX + labelW + index * cellW, heatmapY + headerH, cellW, cellH, simHex, normalHex, ratio, ratio >= 4.5, heatmapMode.value === "normal" ? "" : normalHex, heatmapCompareMode === "split");
-        });
       }
+      heatItems.forEach(([color, pct], index) => {
+        const rgb = mixWithWhite(color.rgb, pct);
+        const normalHex = rgbToHex(rgb);
+        const simHex = rgbToHex(simulate(rgb, heatmapMode.value, heatmapSeverity));
+        const ratio = contrastRatio(rgb, { r: 0, g: 0, b: 0 });
+        tile(tableX + labelW + index * cellW, heatmapY + headerH, cellW, cellH, simHex, normalHex, ratio, ratio >= 4.5, heatmapMode.value === "normal" ? "" : normalHex, heatmapCompareMode === "split", heatFrac);
+      });
 
       text("Vision Control", tableX, matrixY - 34, 13, 900);
       control(matrixMode.options[matrixMode.selectedIndex].text, tableX + 170, matrixY - 58, 140);
@@ -1687,7 +1702,7 @@
         text(ramp.label, tableX + labelW / 2, y + 48, 9, 900, "middle");
         ramp.tints.forEach((tint, index) => {
           const displayHex = tint.simHex;
-          tile(tableX + labelW + index * cellW, y, cellW, cellH, displayHex, tint.hex, tint.ratio, tint.aa, matrixMode.value === "normal" ? "" : tint.hex, matrixCompareMode === "split");
+          tile(tableX + labelW + index * cellW, y, cellW, cellH, displayHex, tint.hex, tint.ratio, tint.aa, matrixMode.value === "normal" ? "" : tint.hex, matrixCompareMode === "split", matrixFrac);
         });
       });
       parts.push(`</svg>`);
