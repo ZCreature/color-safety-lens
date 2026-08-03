@@ -1597,8 +1597,9 @@
     function buildCurrentScreenSvg() {
       const colors = parsePalette();
       const ramps = current.length ? current : buildRamps(colors);
-      const sidebarW = 244;
-      const mainX = 270;
+      /* The export is the charts alone — titles, controls and both tables.
+         The sidebar is an input surface, not a result, so it stays out. */
+      const mainX = 8;
       const mainPad = 16;
       const labelW = 112;
       const cellW = 108;
@@ -1609,8 +1610,8 @@
       const heatmapH = headerH + cellH;
       const matrixY = heatmapY + heatmapH + 96;
       const matrixH = headerH + (cellH * ramps.length);
-      const width = mainX + mainPad + mainW + 32;
-      const height = Math.max(760, matrixY + matrixH + 48);
+      const width = mainX + mainPad + mainW + 24;
+      const height = matrixY + matrixH + 48;
       const parts = [
         `<?xml version="1.0" encoding="UTF-8"?>`,
         `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
@@ -1630,7 +1631,7 @@
           text("AA PASS", x + 6, y + 11, 7, 900);
         } else {
           rect(x, y, 18, 18, "#000000", "#000000", 1);
-          text("X", x + 9, y + 13, 8, 900, "middle");
+          parts.push(`<text x="${x + 9}" y="${y + 13}" ${font} font-size="8" font-weight="900" fill="#ffffff" text-anchor="middle">X</text>`);
         }
       };
       const tile = (x, y, w, h, displayHex, normalHex, ratio, aa, chipHex, split = false, frac = 0.5) => {
@@ -1654,36 +1655,6 @@
         text(label, x + 14, y + 24, 12, 400);
         parts.push(`<path d="M${x + w - 22} ${y + 15}l6 6 6-6" fill="none" stroke="#000000" stroke-width="1.5"/>`);
       };
-
-      rect(0, 0, sidebarW, height, "#ffffff", "#ffffff", 0);
-      const logoX = 20;
-      const logoY = 20;
-      const logoS = 88;
-      const step = logoS / 3;
-      rect(logoX, logoY, logoS, logoS, "#ffffff", "#000000", 2);
-      [[0, 0], [2, 0], [1, 1], [0, 2]].forEach(([cx, cy]) => {
-        rect(logoX + cx * step, logoY + cy * step, step, step, "#000000", "#000000", 0);
-      });
-      parts.push(`<path d="M${logoX + step} ${logoY}v${logoS}M${logoX + step * 2} ${logoY}v${logoS}M${logoX} ${logoY + step}h${logoS}M${logoX} ${logoY + step * 2}h${logoS}" stroke="#000000" stroke-width="1"/>`);
-      text("Black text passes WCAG AA when", 20, 142, 9, 400);
-      text("contrast is 4.5:1 or higher.", 20, 155, 9, 400);
-      text("Large text passes at 3:1.", 20, 168, 9, 400);
-      rect(20, 188, 202, 38, "#ffffff", "#000000", 1);
-      text("Recommended Colors", 121, 212, 10, 700, "middle");
-      text("Enter HEX codes", 20, 254, 11, 700);
-      Array.from(paletteEditor.querySelectorAll(".palette-row")).forEach((row, index) => {
-        const field = row.querySelector(".color-hex");
-        const hex = normalizeHex(field.value);
-        const y = 272 + index * 46;
-        rect(20, y, 38, 38, hex || "#ffffff", "#000000", 1);
-        rect(66, y, 156, 38, "#ffffff", "#000000", 1);
-        text(rawHex(hex) || field.placeholder, 78, y + 24, 12, 400);
-      });
-      const exportY = 272 + maxColors * 46 + 16;
-      rect(20, exportY, 97, 38, "#ffffff", "#000000", 1);
-      text("JSON", 68, exportY + 24, 10, 700, "middle");
-      rect(125, exportY, 97, 38, "#ffffff", "#000000", 1);
-      text("SVG", 173, exportY + 24, 10, 700, "middle");
 
       const scheme = heatmapScheme.value;
       const heatFrac = (parseFloat(getComputedStyle(heatmapStage).getPropertyValue("--split-pos")) || 50) / 100;
