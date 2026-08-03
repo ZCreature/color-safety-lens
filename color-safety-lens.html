@@ -247,16 +247,6 @@
       accent-color: #000000;
     }
 
-    .action {
-      width: 100%;
-      min-height: 42px;
-      border-radius: 0;
-      background: #000000;
-      color: #ffffff;
-      border-color: #000000;
-      font-weight: 800;
-    }
-
     .secondary {
       min-height: 38px;
       border-radius: 0;
@@ -849,16 +839,15 @@
       </div>
       <p class="wcag-note">Black text passes WCAG AA when contrast is 4.5:1 or higher. Large text passes at 3:1.</p>
 
+      <div class="section controls">
+        <button class="secondary" id="recommendedBtn">Recommended Colors</button>
+      </div>
+
       <div class="section">
         <div class="label-row">
           <label>Enter HEX codes</label>
         </div>
         <div class="palette-editor" id="paletteEditor" aria-label="Brand color inputs"></div>
-      </div>
-
-      <div class="section controls">
-        <button class="action" id="generateBtn">Generate</button>
-        <button class="secondary" id="recommendedBtn">Recommended Colors</button>
       </div>
 
       <div class="chart-nav" aria-label="Chart export actions">
@@ -1670,22 +1659,22 @@
       text("Black text passes WCAG AA when", 20, 142, 9, 400);
       text("contrast is 4.5:1 or higher.", 20, 155, 9, 400);
       text("Large text passes at 3:1.", 20, 168, 9, 400);
-      text("Enter HEX codes", 20, 210, 11, 700);
+      rect(20, 188, 202, 38, "#ffffff", "#000000", 1);
+      text("Recommended Colors", 121, 212, 10, 700, "middle");
+      text("Enter HEX codes", 20, 254, 11, 700);
       Array.from(paletteEditor.querySelectorAll(".palette-row")).forEach((row, index) => {
         const field = row.querySelector(".color-hex");
         const hex = normalizeHex(field.value);
-        const y = 228 + index * 46;
+        const y = 272 + index * 46;
         rect(20, y, 38, 38, hex || "#ffffff", "#000000", 1);
         rect(66, y, 156, 38, "#ffffff", "#000000", 1);
         text(rawHex(hex) || field.placeholder, 78, y + 24, 12, 400);
       });
-      const generateY = 228 + maxColors * 46 + 16;
-      rect(20, generateY, 202, 42, "#000000", "#000000", 1);
-      text("Generate", 121, generateY + 26, 12, 800, "middle");
-      rect(20, generateY + 58, 97, 38, "#ffffff", "#000000", 1);
-      text("JSON", 68, generateY + 82, 10, 700, "middle");
-      rect(125, generateY + 58, 97, 38, "#ffffff", "#000000", 1);
-      text("SVG", 173, generateY + 82, 10, 700, "middle");
+      const exportY = 272 + maxColors * 46 + 16;
+      rect(20, exportY, 97, 38, "#ffffff", "#000000", 1);
+      text("JSON", 68, exportY + 24, 10, 700, "middle");
+      rect(125, exportY, 97, 38, "#ffffff", "#000000", 1);
+      text("SVG", 173, exportY + 24, 10, 700, "middle");
 
       const scheme = heatmapScheme.value;
       const heatFrac = (parseFloat(getComputedStyle(heatmapStage).getPropertyValue("--split-pos")) || 50) / 100;
@@ -1826,7 +1815,6 @@
       });
     }
 
-    document.querySelector("#generateBtn").addEventListener("click", update);
     document.querySelector("#recommendedBtn").addEventListener("click", () => {
       recommendedIndex = (recommendedIndex + 1) % recommendedSets.length;
       createPaletteRows(recommendedSets[recommendedIndex]);
