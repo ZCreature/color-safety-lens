@@ -439,6 +439,9 @@
     }
 
     .ramp-header .ramp-label {
+      /* Opaque so the sticky corner masks the percent headers during
+         horizontal scroll — paper, not white, matching the header restyle. */
+      background: var(--paper);
       border-color: transparent;
       border-bottom-color: var(--grid);
     }
@@ -581,13 +584,6 @@
       aspect-ratio: 1 / 1;
     }
 
-    .heatmap-empty {
-      border-right: .5px solid var(--grid);
-      border-bottom: .5px solid var(--grid);
-      aspect-ratio: 1 / 1;
-      background: transparent;
-    }
-
     .heatmap-header {
       min-height: 30px;
       font-size: 8pt;
@@ -598,12 +594,26 @@
     }
 
     .heatmap-label {
+      /* Sticky like the matrix's .ramp-label so both tables keep their row
+         label through a horizontal scroll; opaque so it masks the cells. */
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: var(--paper);
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
       font-weight: 900;
       min-height: 78px;
+    }
+
+    /* The header row's corner cell pins and masks like the labels below it. */
+    .heatmap-row > .heatmap-header:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: var(--paper);
     }
 
     .heatmap-cell {
@@ -793,6 +803,17 @@
       .ramp-label {
         position: static;
         min-height: 44px;
+      }
+
+      /* The header rows' empty corner cells would render as blank full-width
+         banners once everything wraps — nothing pins here, so drop them. */
+      .ramp-header .ramp-label,
+      .heatmap-row:first-child > *:first-child {
+        display: none;
+      }
+
+      .heatmap-label {
+        position: static;
       }
 
       /* The diverging row wraps like the matrix: label as a banner, then two
