@@ -264,13 +264,9 @@
       text-align: center;
     }
 
-    .export-buttons {
-      display: contents;
-    }
-
     .chart-nav {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
       max-width: var(--sidebar-control-width);
       margin-top: 16px;
@@ -281,32 +277,6 @@
       padding: 0 10px;
       font-size: 10px;
       text-transform: uppercase;
-    }
-
-    .chart-nav .icon-button {
-      width: 100%;
-      min-width: 0;
-    }
-
-    .icon-button {
-      min-width: 38px;
-      height: 38px;
-      min-height: 38px;
-      display: grid;
-      place-items: center;
-      padding: 0 10px;
-      border: 1px solid var(--line);
-      background: #ffffff;
-      color: #000000;
-      font-size: 10px;
-      font-weight: 900;
-      line-height: 1;
-    }
-
-    .icon-button svg {
-      width: 24px;
-      height: 24px;
-      display: block;
     }
 
     .tabs {
@@ -793,10 +763,7 @@
 
       <div class="chart-nav" aria-label="Chart export actions">
         <button class="secondary" id="copyBtn">JSON</button>
-        <div class="export-buttons" aria-label="Export options">
-          <button class="icon-button" id="figmaExportBtn" title="Download Figma-ready SVG" aria-label="Download Figma-ready SVG">FIGMA</button>
-          <button class="icon-button" id="svgExportBtn" title="Download SVG" aria-label="Download SVG">SVG</button>
-        </div>
+        <button class="secondary" id="svgExportBtn" title="Download SVG" aria-label="Download SVG">SVG</button>
       </div>
 
       <div class="cvd-note">
@@ -897,7 +864,6 @@
     const matrixMode = document.querySelector("#matrixVisionMode");
     const lensStage = document.querySelector("#lensStage");
     const copyBtn = document.querySelector("#copyBtn");
-    const figmaExportBtn = document.querySelector("#figmaExportBtn");
     const svgExportBtn = document.querySelector("#svgExportBtn");
     const heatmap = document.querySelector("#heatmap");
     const heatmapStage = document.querySelector("#heatmapStage");
@@ -1626,12 +1592,10 @@
       const generateY = 228 + maxColors * 46 + 16;
       rect(20, generateY, 202, 42, "#000000", "#000000", 1);
       text("Generate", 121, generateY + 26, 12, 800, "middle");
-      rect(20, generateY + 58, 94, 38, "#ffffff", "#000000", 1);
-      text("JSON", 67, generateY + 82, 10, 700, "middle");
-      rect(122, generateY + 58, 50, 38, "#ffffff", "#000000", 1);
-      text("FIGMA", 147, generateY + 82, 10, 900, "middle");
-      rect(180, generateY + 58, 42, 38, "#ffffff", "#000000", 1);
-      text("SVG", 201, generateY + 82, 10, 900, "middle");
+      rect(20, generateY + 58, 97, 38, "#ffffff", "#000000", 1);
+      text("JSON", 68, generateY + 82, 10, 700, "middle");
+      rect(125, generateY + 58, 97, 38, "#ffffff", "#000000", 1);
+      text("SVG", 173, generateY + 82, 10, 700, "middle");
 
       const scheme = heatmapScheme.value;
       const heatFrac = (parseFloat(getComputedStyle(heatmapStage).getPropertyValue("--split-pos")) || 50) / 100;
@@ -1801,7 +1765,6 @@
     });
 
     copyBtn.addEventListener("click", exportJsonTokens);
-    figmaExportBtn.addEventListener("click", () => downloadScreenSvg("color-safety-lens-figma-import.svg", figmaExportBtn));
     svgExportBtn.addEventListener("click", () => downloadScreenSvg("color-safety-lens-current-screen.svg", svgExportBtn));
     heatmapScheme.addEventListener("change", () => update());
     heatmapColorA.addEventListener("change", () => update());
