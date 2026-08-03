@@ -890,27 +890,17 @@
 
     const maxColors = 10;
 
-    // Bright "skittle" starting palette - chosen to surface AA failures and
-    // CVD-confusable pairs immediately so the tool has something to fix.
-    const skittleColors = [
-      "ED1C24",
-      "FF7F00",
-      "FFD700",
-      "39B54A",
-      "0000FF",
-      "662D91"
+    // Approved colorblind-safe palettes. The first set loads on start; each
+    // press of Recommended Colors advances to the next and wraps around.
+    const recommendedSets = [
+      // Wong / Okabe-Ito
+      ["E69F00", "56B4E9", "009E73", "F0E442", "0072B2", "D55E00", "CC79A7"],
+      // Paul Tol vibrant
+      ["EE7733", "0077BB", "33BBEE", "EE3377", "CC3311", "009988", "BBBBBB"],
+      // IBM Design Library
+      ["648FFF", "785EF0", "DC267F", "FE6100", "FFB000"]
     ];
-
-    // Wong/Okabe-Ito colorblind-safe palette, all WCAG AA-checked.
-    const recommendedColors = [
-      "E69F00",
-      "56B4E9",
-      "009E73",
-      "F0E442",
-      "0072B2",
-      "D55E00",
-      "CC79A7"
-    ];
+    let recommendedIndex = 0;
 
     // Delta E threshold: pairs below this are flagged as potentially confusable.
     const CONFUSABLE_THRESHOLD = 10;
@@ -1739,7 +1729,8 @@
 
     document.querySelector("#generateBtn").addEventListener("click", update);
     document.querySelector("#recommendedBtn").addEventListener("click", () => {
-      createPaletteRows(recommendedColors);
+      recommendedIndex = (recommendedIndex + 1) % recommendedSets.length;
+      createPaletteRows(recommendedSets[recommendedIndex]);
       update();
     });
 
@@ -1794,7 +1785,7 @@
     });
 
     updateSeverityVisibility();
-    createPaletteRows(skittleColors);
+    createPaletteRows(recommendedSets[recommendedIndex]);
     update();
 
     document.querySelector(".mark").addEventListener("click", (event) => {
