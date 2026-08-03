@@ -374,6 +374,11 @@
     }
 
     .ramp-label {
+      /* Pinned so the colour's name survives the horizontal scroll the narrow
+         layouts rely on. */
+      position: sticky;
+      left: 0;
+      z-index: 2;
       min-height: 96px;
       border-radius: 0;
       border: 0;
@@ -393,7 +398,11 @@
 
     .swatches {
       display: grid;
-      grid-template-columns: repeat(10, minmax(68px, 1fr));
+      /* Cells grow with the window but stop at 136px: past that a swatch is a
+         slab and the row stretches to fill any monitor. The floor keeps the
+         hex + ratio readable; below it the matrix scrolls sideways instead of
+         crushing. */
+      grid-template-columns: repeat(10, minmax(68px, 136px));
       gap: 0;
       overflow: visible;
       padding-bottom: 0;
@@ -538,7 +547,9 @@
 
     .heatmap-row {
       display: grid;
-      grid-template-columns: 112px repeat(10, minmax(68px, 1fr));
+      /* Same cap as .swatches — this grid was left stretching on wide
+         screens (and clipping on phones) when the matrix learned to adapt. */
+      grid-template-columns: 112px repeat(10, minmax(68px, 136px));
       min-width: 0;
       width: 100%;
     }
@@ -716,6 +727,45 @@
         border-right: 0;
       }
 
+      /* Stacked on top, the sidebar keeps its 202px column and abandons the
+         rest of the screen. Let the hex inputs flow across the width instead
+         of trailing down it. */
+      .palette-editor {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 8px 16px;
+        max-width: none;
+      }
+
+      .section.controls,
+      .chart-nav {
+        max-width: 420px;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .ramp {
+        grid-template-columns: 84px minmax(0, 1fr);
+      }
+
+      .ramp-label,
+      .swatch {
+        min-height: 76px;
+        padding: 8px 6px;
+      }
+
+      .swatches {
+        grid-template-columns: repeat(10, minmax(58px, 1fr));
+      }
+
+      .heatmap-row {
+        grid-template-columns: 84px repeat(10, minmax(58px, 1fr));
+      }
+
+      .hex,
+      .ratio {
+        font-size: 7pt;
+      }
     }
 
     @media (max-width: 720px) {
@@ -731,6 +781,34 @@
 
       .ramp {
         grid-template-columns: 1fr;
+      }
+
+      /* Ten swatches read as two rows of five; a single ten-across row is
+         wider than the screen it is on. The label stops being sticky because
+         the row no longer scrolls. */
+      .swatches {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .ramp-label {
+        position: static;
+        min-height: 44px;
+      }
+
+      /* The diverging row wraps like the matrix: label as a banner, then two
+         rows of five. Ten-across is wider than the screen it is on. */
+      .heatmap-row {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .heatmap-row > *:first-child {
+        grid-column: 1 / -1;
+        min-height: 40px;
+      }
+
+      .heatmap-controls select {
+        min-width: 0;
+        width: 100%;
       }
     }
 
